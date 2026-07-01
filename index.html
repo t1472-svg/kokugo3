@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>同じ訓あつめバトルボード（完全リアルタイム版）</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f4f7f6; padding: 20px; color: #333; margin: 0; }
+        
+        /* 固定のヒント看板 */
+        .hint-banner { width: 97%; background: #2c3e50; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .hint-title { font-size: 14px; color: #95a5a6; font-weight: bold; margin-bottom: 5px; }
+        .hint-words { font-size: 20px; font-weight: bold; color: #f1c40f; word-spacing: 15px; letter-spacing: 2px; }
+
+        /* タイマー表示エリア */
+        .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .timer-display { font-size: 32px; font-weight: bold; background: #e74c3c; color: white; padding: 10px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .timer-display.stopped { background: #7f8c8d; }
+        h1 { margin: 0; color: #2c3e50; font-size: 28px; }
+
+        .main-container { display: flex; gap: 20px; align-items: flex-start; }
+        
+        /* 左側：ランキングと管理パネル */
+        .side-bar { width: 340px; display: flex; flex-direction: column; gap: 20px; }
+        
+        .ranking-area { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .ranking-title { font-weight: bold; font-size: 18px; color: #e67e22; margin-bottom: 10px; border-bottom: 2px solid #ffeaa7; padding-bottom: 5px; }
+        .rank-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #eee; font-size: 14px; }
+        .rank-number { font-weight: bold; color: #e67e22; }
+
+        /* 右側：集計ボード */
+        .board { flex-grow: 1; display: flex; flex-wrap: wrap; gap: 20px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); min-height: 550px; }
+        .group-box { background: #fafafa; border-top: 5px solid #3498db; border-radius: 8px; padding: 15px; width: 230px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); height: fit-content; }
+        .group-title { font-size: 22px; font-weight: bold; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-bottom: 10px; color: #2980b9; text-align: center; }
+        .card { background: white; padding: 10px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #e0e0e0; position: relative; }
+        .card-kanji { font-size: 20px; font-weight: bold; color: #2c3e50; }
+        .card-usage { font-size: 13px; color: #555; margin-top: 4px; display: block; }
+        .card-author { font-size: 11px; color: #95a5a6; display: block; text-align: right; margin-top: 5px; font-style: italic; }
+
+        /* 先生用タイマーコントローラー */
+        .teacher-control { background: #e9ecef; padding: 15px; border-radius: 12px; font-size: 13px; border: 1px solid #ced4da; }
+        .teacher-control h3 { margin: 0 0 10px 0; font-size: 14px; color: #495057; }
+        .teacher-control input { width: 60px; padding: 5px; font-size: 13px; text-align: center; border: 1px solid #ccc; border-radius: 4px; }
+        .teacher-control button { width: auto; padding: 6px 12px; font-size: 13px; margin-right: 5px; border: none; border-radius: 4px; color: white; cursor: pointer; font-weight: bold; }
+        .system-status { font-size: 11px; color: #2ecc71; margin-top: 8px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="hint-banner">
+        <div class="hint-title">💡 なにをしらべる？ まよったらこの言葉を辞典（じてん）でひいてみよう！</div>
+        <div class="hint-words">
+            【あう】 【つくる】 【たつ】 【なおす】 【おさめる】 【かえる】 【あらわす】 【きく】 【とる】
+        </div>
+    </div>
+
+    <div class="header-area">
+        <h1>✨ 同じ訓あつめバトルボード ✨</h1>
+        <div id="timer-box" class="timer-display stopped">⏱️ のこり時間 10:00</div>
+    </div>
+
+    <div class="main-container">
+        <div class="side-bar">
+            <div class="ranking-area">
+                <div class="ranking-title">🏆 たくさん発見した人</div>
+                <div id="ranking-list">子どもたちが送信するとここにランキングが出ます。</div>
+            </div>
+
+            <div class="teacher-control">
+                <h3>🛠️ 先生用管理（タイマー設定）</h3>
+                設定時間：<input type="number" id="setup-time" value="10" min="1"> 分 
+                <button onclick="setTimer()" style="background:#6c757d;">時間をセット</button>
+                <hr style="margin:12px 0; border:0; border-top:1px solid #ccc;">
+                <button onclick="startTimer()" style="background:#2ecc71;">スタート</button>
+                <button onclick="stopTimer()" style="background:#e74c3c;">ストップ</button>
+                <button onclick="resetTimer()" style="background:#f39c12;">リセット</button>
+                <div id="status-msg" class="system-status">🔄 自動集計システム：待機中...</div>
+            </div>
+        </div>
+
+        <div class="board" id="board">スタートボタンを押すと、完全リアルタイム通信を開始します！</div>
+    </div>
+
+    <script>
+        // 🛠️ 北川先生のGASウェブアプリURLを埋め込み済みです！
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxggcbH3rOE-E4GhlBoC3US_BjTZ7OOoR7JemqAJICeVsYx1V22uW9Jo4rNZj3KNLF7tg/exec';
+        
+        let dataStore = {};
+        let userScores = {};
+        let duration = 600; 
+        let timerId = null;
+        let syncId = null;
+        let isTimeUp = false;
+
+        function updateTimerDisplay() {
+            const min = Math.floor(duration / 60);
+            const sec = duration % 60;
+            const timerBox = document.getElementById('timer-box');
+            timerBox.innerText = `⏱️ のこり時間 ${min}:${sec.toString().padStart(2, '0')}`;
+            
+            if (duration <= 0) {
+                timerBox.innerText = "🛑 タイムアップ！終了です";
+                timerBox.classList.add('stopped');
+                isTimeUp = true;
+                clearInterval(timerId);
+                clearInterval(syncId);
+                document.getElementById('status-msg').innerText = "🛑 受付を終了しました";
+                document.getElementById('status-msg').style.color = "#e74c3c";
+            }
+        }
+
+        function setTimer() {
+            const inputMin = document.getElementById('setup-time').value;
+            duration = parseInt(inputMin) * 60;
+            isTimeUp = false;
+            updateTimerDisplay();
+        }
+
+        function startTimer() {
+            if (timerId !== null) clearInterval(timerId);
+            if (isTimeUp) return;
+            document.getElementById('timer-box').classList.remove('stopped');
+            timerId = setInterval(() => {
+                duration--;
+                updateTimerDisplay();
+            }, 1000);
+
+            document.getElementById('status-msg').innerText = "⚡ 超高速リアルタイム通信中...";
+            document.getElementById('status-msg').style.color = "#2ecc71";
+            fetchData();
+            syncId = setInterval(fetchData, 2000); // 2秒ごとにタイムラグなしで強制取得
+        }
+
+        function stopTimer() {
+            clearInterval(timerId);
+            clearInterval(syncId);
+            document.getElementById('timer-box').classList.add('stopped');
+            document.getElementById('status-msg').innerText = "⏸️ 集計を一時停止中";
+            document.getElementById('status-msg').style.color = "#f39c12";
+        }
+
+        function resetTimer() {
+            stopTimer();
+            setTimer();
+        }
+
+        function fetchData() {
+            if (!GAS_URL) return;
+
+            fetch(GAS_URL)
+                .then(res => res.json())
+                .then(rows => {
+                    dataStore = {};
+                    userScores = {};
+
+                    rows.forEach(row => {
+                        const name = row.name ? row.name.toString().trim() : '';
+                        const kun = row.kun ? row.kun.toString().trim() : '';
+                        const kanji = row.kanji ? row.kanji.toString().trim() : '';
+                        const usage = row.usage ? row.usage.toString().trim() : '';
+
+                        if (name && kun && kanji && usage) {
+                            if (/^[ぁ-んー]*$/.test(kun)) {
+                                if (!dataStore[kun]) dataStore[kun] = [];
+                                const isDuplicate = dataStore[kun].some(item => item.kanji === kanji);
+                                if (!isDuplicate) {
+                                    dataStore[kun].push({ name, kanji, usage });
+                                    userScores[name] = (userScores[name] || 0) + 1;
+                                }
+                            }
+                        }
+                    });
+
+                    renderBoard();
+                    renderRanking();
+                })
+                .catch(err => {
+                    console.error("データ取得エラー:", err);
+                });
+        }
+
+        function renderBoard() {
+            const board = document.getElementById('board');
+            if (Object.keys(dataStore).length === 0) {
+                board.innerText = "子どもたちの送信データを待っています...";
+                return;
+            }
+            board.innerHTML = '';
+
+            for (const kun in dataStore) {
+                const box = document.createElement('div');
+                box.className = 'group-box';
+                let html = `<div class="group-title">【${kun}】</div>`;
+                dataStore[kun].forEach(item => {
+                    html += `
+                        <div class="card">
+                            <span class="card-kanji">${item.kanji}</span>
+                            <span class="card-usage">${item.usage}</span>
+                            <span class="card-author">by ${item.name}</span>
+                        </div>`;
+                });
+                box.innerHTML = html;
+                board.appendChild(box);
+            }
+        }
+
+        function renderRanking() {
+            const rankingList = document.getElementById('ranking-list');
+            if (Object.keys(userScores).length === 0) {
+                rankingList.innerText = "データがありません。";
+                return;
+            }
+            rankingList.innerHTML = '';
+            const sortedUsers = Object.entries(userScores).sort((a, b) => b[1] - a[1]);
+            sortedUsers.forEach(([user, score], index) => {
+                const item = document.createElement('div');
+                item.className = 'rank-item';
+                item.innerHTML = `<span><span class="rank-number">${index + 1}位</span> ${user} さん</span><strong>${score} 個</strong>`;
+                rankingList.appendChild(item);
+            });
+        }
+    </script>
+</body>
+</html>
