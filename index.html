@@ -187,4 +187,39 @@
                             <span class="card-label">📖 いみ</span>
                             <span class="card-text">${item.meaning || '（未入力）'}</span>
                             <span class="card-label">✏️ つかい方</span>
-                            <span class="card
+                        　　 <span class="card-text">${item.usage || '（未入力）'}</span>
+                            <span class="card-author">by ${item.name}</span>
+                        </div>`;
+                });
+                
+                html += `
+                        </div>
+                    </div>`;
+                
+                box.innerHTML = html;
+                board.appendChild(box);
+            }
+        }
+
+        function rotateRanking() {
+            // 将来的な拡張用
+        }
+
+        function renderRanking() {
+            const rankingList = document.getElementById('ranking-list');
+            if (Object.keys(userScores).length === 0) {
+                rankingList.innerText = "データがありません。";
+                return;
+            }
+            rankingList.innerHTML = '';
+            const sortedUsers = Object.entries(userScores).sort((a, b) => b[1] - a[1]);
+            sortedUsers.forEach(([user, score], index) => {
+                const item = document.createElement('div');
+                item.className = 'rank-item';
+                item.innerHTML = `<span><span class="rank-number">${index + 1}位</span> ${user} さん</span><strong>${score} 個</strong>`;
+                rankingList.appendChild(item);
+            });
+        }
+    </script>
+</body>
+</html>
