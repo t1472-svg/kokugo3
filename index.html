@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>同じ訓あつめバトルボード（横並び・修正版）</title>
+    <title>同じ訓あつめバトルボード（横スクロール版）</title>
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f4f7f6; padding: 20px; color: #333; margin: 0; }
         
@@ -25,18 +25,18 @@
         .rank-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #eee; font-size: 18px; }
         .rank-number { font-weight: bold; color: #e67e22; }
 
-        /* 右側：集計ボード（横幅いっぱいに広げる） */
-        .board { flex-grow: 1; display: flex; flex-direction: column; gap: 25px; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); min-height: 600px; }
+        /* 右側：集計ボード（メインコンテナ） */
+        .board { flex-grow: 1; display: flex; flex-direction: column; gap: 25px; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); min-height: 600px; overflow-x: hidden; }
         
-        /* グループの箱を横長に */
-        .group-box { background: #fafafa; border-left: 8px solid #3498db; border-top: none; border-radius: 8px; padding: 15px 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); width: auto; }
+        /* ★グループの箱自体が横スクロールできるように設定 */
+        .group-box { background: #fafafa; border-left: 8px solid #3498db; border-radius: 8px; padding: 15px 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); width: auto; overflow-x: auto; }
         
         /* 訓のタイトルとカードたちを横並びにするコンテナ */
-        .group-content-wrapper { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
-        .group-title { font-size: 28px; font-weight: bold; color: #2980b9; min-width: 120px; margin: 0; text-align: center; }
+        .group-content-wrapper { display: flex; align-items: center; gap: 25px; }
+        .group-title { font-size: 28px; font-weight: bold; color: #2980b9; min-width: 120px; margin: 0; text-align: center; flex-shrink: 0; }
         
-        /* カードを表示するエリア */
-        .cards-container { display: flex; gap: 15px; flex-wrap: wrap; flex-grow: 1; }
+        /* ★折り返しを完全に禁止し、横に無限に伸びる設定 */
+        .cards-container { display: flex; gap: 15px; flex-wrap: nowrap; }
         
         /* カードのデザイン */
         .card { background: white; padding: 12px; border-radius: 6px; border: 1px solid #ced4da; box-shadow: 0 2px 4px rgba(0,0,0,0.02); width: 220px; flex-shrink: 0; }
@@ -89,7 +89,6 @@
     </div>
 
     <script>
-        // 北川先生のGASウェブアプリURL
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxggcbH3rOE-E4GhlBoC3US_BjTZ7OOoR7JemqAJICeVsYx1V22uW9Jo4rNZj3KNLF7tg/exec';
         
         let dataStore = {};
