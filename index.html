@@ -2,212 +2,117 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>同じ訓あつめバトルボード（電子黒板・完全分離版）</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>同じ訓あつめバトルボード</title>
+    
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f4f7f6; padding: 20px; color: #333; margin: 0; }
         
-        /* 固定のヒント看板 */
-        .hint-banner { width: 97%; background: #2c3e50; padding: 15px 20px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .hint-title { font-size: 18px; color: #95a5a6; font-weight: bold; margin-bottom: 8px; }
-        .hint-words { font-size: 28px; font-weight: bold; color: #f1c40f; word-spacing: 20px; letter-spacing: 2px; }
+        /* 印刷用ボタン：普段は半透明で右下に小さく、触れると大きくなる */
+        .print-btn { 
+            position: fixed; bottom: 20px; right: 20px; z-index: 1000;
+            padding: 10px 20px; background: #27ae60; color: white; border: none; border-radius: 50px; 
+            font-size: 14px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); 
+            opacity: 0.3; transition: all 0.3s ease;
+        }
+        .print-btn:hover { opacity: 1; transform: scale(1.1); font-size: 16px; padding: 15px 30px; }
 
-        /* 横向きランキングエリア */
-        .ranking-container { width: 97%; background: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 20px; }
-        .ranking-title { font-weight: bold; font-size: 24px; color: #e67e22; flex-shrink: 0; border-right: 3px solid #ffeaa7; padding-right: 15px; }
-        .ranking-list { display: flex; gap: 20px; flex-grow: 1; overflow-x: auto; white-space: nowrap; font-size: 22px; }
-        .rank-item { background: #fff3cd; padding: 6px 14px; border-radius: 4px; border: 1px solid #ffeeba; }
-        .rank-number { font-weight: bold; color: #e67e22; }
+        .hint-banner, .ranking-container { width: 97%; background: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .hint-words { font-size: 24px; font-weight: bold; color: #2c3e50; }
 
-        /* タイトルエリア */
-        .header-area { margin-bottom: 25px; text-align: center; }
-        h1 { margin: 0; color: #2c3e50; font-size: 42px; letter-spacing: 2px; }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
 
-        /* 集計ボード */
-        .board { display: flex; flex-direction: column; gap: 25px; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); min-height: 600px; }
+        .board { display: flex; flex-direction: column; gap: 20px; }
         
-        /* ★【変更】グループの箱自体はスクロールさせず、左右の要素を並べる土台にする */
         .group-box { 
-            background: #fafafa; 
-            border-left: 12px solid #3498db; 
-            border-radius: 8px; 
-            padding: 15px 20px; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
-            display: flex; 
-            align-items: center; 
-            gap: 20px;
-            overflow: hidden; /* はみ出し防止 */
+            background: white; border-left: 8px solid #3498db; border-radius: 8px; padding: 15px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; align-items: flex-start; gap: 15px;
         }
         
-        /* ★【絶対固定】幅をガッチリ固定し、右側のスクロールに1ミリも巻き込まれない設定 */
-        .group-title { 
-            font-size: 38px; 
-            font-weight: bold; 
-            color: #2980b9; 
-            width: 160px; 
-            margin: 0; 
-            text-align: center; 
-            flex-shrink: 0; 
-            border-right: 3px solid #e0e0e0; 
-            padding-right: 20px;
-        }
+        .group-title { font-size: 32px; font-weight: bold; color: #2980b9; width: 120px; flex-shrink: 0; text-align: center; }
         
-        /* ★【ここだけ横スクロール】カードの並ぶエリアだけが独立して右側に伸び、スクロールする */
-        .cards-container { 
-            display: flex; 
-            gap: 25px; 
-            flex-wrap: nowrap; 
-            overflow-x: auto; 
-            flex-grow: 1;
-            padding: 10px 0 10px 10px;
-        }
+        .cards-container { display: flex; gap: 15px; flex-wrap: wrap; flex-grow: 1; }
         
-        /* カードのデザイン */
-        .card { background: white; padding: 18px; border-radius: 8px; border: 2px solid #ced4da; box-shadow: 0 2px 4px rgba(0,0,0,0.02); width: 300px; flex-shrink: 0; }
-        .card-kanji { font-size: 42px; font-weight: bold; color: #2c3e50; display: block; margin-bottom: 8px; text-align: center; background: #eef2f5; border-radius: 6px; padding: 6px 0; }
-        .card-label { font-size: 16px; color: #555; font-weight: bold; display: block; margin-top: 12px; border-left: 4px solid #3498db; padding-left: 6px; margin-bottom: 4px; }
-        .card-text { font-size: 22px; color: #000; font-weight: bold; display: block; line-height: 1.5; margin-bottom: 6px; background: #fdfdfd; padding: 4px; border-radius: 4px; }
-        .card-author { font-size: 16px; color: #7f8c8d; display: block; text-align: right; margin-top: 14px; font-style: italic; border-top: 1px dashed #eee; padding-top: 8px; }
+        .card { background: #fff; padding: 12px; border-radius: 6px; border: 1px solid #dee2e6; width: 220px; }
+        .card-kanji { font-size: 32px; font-weight: bold; color: #2c3e50; text-align: center; display: block; margin-bottom: 5px; }
+        .card-label { font-size: 12px; color: #7f8c8d; font-weight: bold; margin-top: 8px; display: block; }
+        .card-text { font-size: 16px; font-weight: bold; line-height: 1.4; display: block; }
+        .card-author { font-size: 12px; color: #95a5a6; text-align: right; margin-top: 10px; display: block; }
+
+        /* 印刷用スタイル */
+        @media print {
+            @page { margin: 10mm; }
+            .print-btn, .hint-banner { display: none !important; }
+            body { background: white; padding: 0; margin: 0; }
+            h1 { font-size: 24px; margin-bottom: 10px; }
+            .board { gap: 10px; }
+            .group-box { border-left: 6px solid #3498db; page-break-inside: avoid; margin-bottom: 8px; padding: 8px; }
+            .card { width: 170px; border: 1px solid #ccc; page-break-inside: avoid; }
+            .card-kanji { font-size: 24px; }
+            .card-text { font-size: 13px; }
+        }
     </style>
 </head>
 <body>
 
+    <button class="print-btn" onclick="window.print()">🖨️ 印刷</button>
+
     <div class="hint-banner">
-        <div class="hint-title">💡 なにをしらべる？ まよったらこの言葉を辞典（じてん）でひいてみよう！</div>
-        <div class="hint-words">
-            【あう】 【つくる】 【たつ】 【なおす】 【おさめる】 【かえる】 【あらわす】 【きく】 【とる】
-        </div>
+        <strong>💡 ヒント：</strong> <span class="hint-words">【あう】【つくる】【たつ】【なおす】【おさめる】【かえる】【あらわす】【きく】【とる】</span>
     </div>
 
-    <div class="ranking-container">
-        <div class="ranking-title">🏆 たくさん発見した人</div>
-        <div id="ranking-list" class="ranking-list">子どもたちが送信するとここにランキングが出ます。</div>
-    </div>
+    <h1>✨ ５－１　同じ訓あつめバトルボード ✨</h1>
 
-    <div class="header-area">
-        <h1>✨ ５－１　同じ訓あつめバトルボード ✨</h1>
-    </div>
-
-    <div class="board" id="board">子どもたちの回答を待っています...（自動受付中）</div>
+    <div class="board" id="board">読み込み中...</div>
 
     <script>
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxggcbH3rOE-E4GhlBoC3US_BjTZ7OOoR7JemqAJICeVsYx1V22uW9Jo4rNZj3KNLF7tg/exec';
-        
-        let dataStore = {};
-        let userScores = {};
 
-        window.onload = function() {
-            fetchData();
-            setInterval(fetchData, 2000);
-        };
+        window.onload = fetchData;
 
         function fetchData() {
-            if (!GAS_URL) return;
-
             fetch(GAS_URL)
                 .then(res => res.json())
                 .then(rows => {
-                    dataStore = {};
-                    userScores = {};
+                    const dataStore = {};
+                    const seenKanji = new Set();
 
                     rows.forEach(row => {
-                        const name = row.name ? row.name.toString().trim() : '';
-                        const kun = row.kun ? row.kun.toString().trim() : '';
-                        const kanji = row.kanji ? row.kanji.toString().trim() : '';
-                        const meaning = row.meaning ? row.meaning.toString().trim() : '';
-                        const usage = row.usage ? row.usage.toString().trim() : '';
-
-                        if (name && kun && kanji) {
-                            if (/^[ぁ-んー]*$/.test(kun)) {
-                                if (!dataStore[kun]) dataStore[kun] = [];
-                                const isDuplicate = dataStore[kun].some(item => item.kanji === kanji);
-                                if (!isDuplicate) {
-                                    dataStore[kun].push({ name, kanji, meaning, usage });
-                                    userScores[name] = (userScores[name] || 0) + 1;
-                                }
-                            }
+                        if (row.kun && row.kanji) {
+                            const uniqueKey = `${row.kun}-${row.kanji}`;
+                            if (seenKanji.has(uniqueKey)) return;
+                            
+                            seenKanji.add(uniqueKey);
+                            if (!dataStore[row.kun]) dataStore[row.kun] = [];
+                            dataStore[row.kun].push(row);
                         }
                     });
-
-                    renderBoard();
-                    renderRanking();
-                })
-                .catch(err => {
-                    console.error("データ取得エラー:", err);
+                    renderBoard(dataStore);
                 });
         }
 
-        function renderBoard() {
+        function renderBoard(dataStore) {
             const board = document.getElementById('board');
-            if (Object.keys(dataStore).length === 0) {
-                board.innerText = "子どもたちの送信データを待っています...";
-                return;
-            }
-
-            // 画面全体の縦スクロール位置を記憶
-            const savedScrollY = window.scrollY || document.documentElement.scrollTop;
-
-            // ★【変更】カードエリアごとの現在の横スクロール位置を記憶
-            const scrollPositions = {};
-            document.querySelectorAll('.group-box').forEach(box => {
-                const kunTitle = box.querySelector('.group-title').innerText;
-                const container = box.querySelector('.cards-container');
-                if (container) {
-                    scrollPositions[kunTitle] = container.scrollLeft;
-                }
-            });
-
             board.innerHTML = '';
-
-            for (const kun in dataStore) {
+            
+            Object.keys(dataStore).sort().forEach(kun => {
                 const box = document.createElement('div');
                 box.className = 'group-box';
-                
-                // 構造を変更：cards-containerだけがスクロールする
-                let html = `
+                box.innerHTML = `
                     <div class="group-title">【${kun}】</div>
-                    <div class="cards-container">`;
-                
-                dataStore[kun].forEach(item => {
-                    html += `
-                        <div class="card">
-                            <span class="card-kanji">${item.kanji}</span>
-                            <span class="card-label">📖 いみ</span>
-                            <span class="card-text">${item.meaning || '（未入力）'}</span>
-                            <span class="card-label">✏️ つかい方</span>
-                            <span class="card-text">${item.usage || '（未入力）'}</span>
-                            <span class="card-author">by ${item.name}</span>
-                        </div>`;
-                });
-                
-                html += `</div>`;
-                
-                box.innerHTML = html;
+                    <div class="cards-container">
+                        ${dataStore[kun].map(item => `
+                            <div class="card">
+                                <span class="card-kanji">${item.kanji}</span>
+                                <span class="card-label">意味</span>
+                                <span class="card-text">${item.meaning || '－'}</span>
+                                <span class="card-label">使い方</span>
+                                <span class="card-text">${item.usage || '－'}</span>
+                                <span class="card-author">by ${item.name}</span>
+                            </div>
+                        `).join('')}
+                    </div>`;
                 board.appendChild(box);
-
-                // ★【変更】カードエリアの横スクロール位置を復元
-                const kunTitle = `【${kun}】`;
-                const container = box.querySelector('.cards-container');
-                if (container && scrollPositions[kunTitle] !== undefined) {
-                    container.scrollLeft = scrollPositions[kunTitle];
-                }
-            }
-
-            window.scrollTo(0, savedScrollY);
-        }
-
-        function renderRanking() {
-            const rankingList = document.getElementById('ranking-list');
-            if (Object.keys(userScores).length === 0) {
-                rankingList.innerText = "データがありません。";
-                return;
-            }
-            rankingList.innerHTML = '';
-            const sortedUsers = Object.entries(userScores).sort((a, b) => b[1] - a[1]);
-            sortedUsers.forEach(([user, score], index) => {
-                const item = document.createElement('div');
-                item.className = 'rank-item';
-                item.innerHTML = `<span class="rank-number">${index + 1}位</span> ${user}さん (${score}個)`;
-                rankingList.appendChild(item);
             });
         }
     </script>
